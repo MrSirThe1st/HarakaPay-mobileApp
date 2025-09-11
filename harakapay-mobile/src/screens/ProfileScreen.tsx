@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProfileScreen() {
@@ -17,59 +17,142 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-blue-600 px-6 pt-16 pb-8">
-        <Text className="text-3xl font-bold text-white">
-          Profile
-        </Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Profile</Text>
       </View>
       
-      {/* Profile Info */}
-      <View className="px-6 py-6">
-        <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-          <View className="items-center mb-6">
-            <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-              <Text className="text-blue-600 text-2xl font-bold">
-                {profile?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-              </Text>
-            </View>
-            <Text className="text-xl font-semibold text-gray-900">
-              {profile?.first_name} {profile?.last_name}
-            </Text>
-            <Text className="text-gray-600">
-              {user?.email}
+      <View style={styles.content}>
+        <View style={styles.profileCard}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatar}>
+              {profile?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
             </Text>
           </View>
+          <Text style={styles.name}>
+            {profile?.first_name} {profile?.last_name}
+          </Text>
+          <Text style={styles.email}>
+            {user?.email}
+          </Text>
         </View>
         
-        {/* Info Cards */}
-        <View className="space-y-4 mb-8">
-          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <Text className="text-sm text-gray-500 mb-2">Phone</Text>
-            <Text className="text-base text-gray-900">
-              {profile?.phone || 'Not provided'}
-            </Text>
-          </View>
-          
-          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <Text className="text-sm text-gray-500 mb-2">Account Type</Text>
-            <Text className="text-base text-gray-900 capitalize">
-              {profile?.role || 'Parent'}
-            </Text>
-          </View>
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>Phone</Text>
+          <Text style={styles.value}>
+            {profile?.phone || 'Not provided'}
+          </Text>
         </View>
         
-        {/* Sign Out Button */}
+        <View style={styles.infoCard}>
+          <Text style={styles.label}>Account Type</Text>
+          <Text style={styles.value}>
+            {profile?.role || 'Parent'}
+          </Text>
+        </View>
+        
         <TouchableOpacity 
-          className="bg-red-500 rounded-2xl py-4"
+          style={styles.signOutButton}
           onPress={handleSignOut}
         >
-          <Text className="text-white text-center font-semibold text-lg">
-            Sign Out
-          </Text>
+          <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    backgroundColor: '#3B82F6',
+    padding: 24,
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  content: {
+    padding: 24,
+  },
+  profileCard: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 16,
+    marginBottom: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  avatar: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#3B82F6',
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  email: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  infoCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  label: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  value: {
+    fontSize: 16,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  signOutButton: {
+    backgroundColor: '#EF4444',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 24,
+  },
+  signOutText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});

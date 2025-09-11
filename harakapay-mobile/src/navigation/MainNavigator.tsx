@@ -1,7 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Icon } from 'react-native-elements';
+import { Text } from 'react-native';
 import HomeScreen from '../screens/HomeScreen';
 import SchoolsScreen from '../screens/SchoolsScreen';
 import StudentsScreen from '../screens/StudentsScreen';
@@ -9,36 +8,35 @@ import PaymentsScreen from '../screens/PaymentsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
 
 export default function MainNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: string;
+          let iconText: string;
 
           switch (route.name) {
             case 'Home':
-              iconName = 'home';
+              iconText = '🏠';
               break;
             case 'Schools':
-              iconName = 'school';
+              iconText = '🏫';
               break;
             case 'Students':
-              iconName = 'people';
+              iconText = '👨‍👩‍👧‍👦';
               break;
             case 'Payments':
-              iconName = 'payment';
+              iconText = '💳';
               break;
             case 'Profile':
-              iconName = 'person';
+              iconText = '👤';
               break;
             default:
-              iconName = 'help';
+              iconText = '❓';
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Text style={{ fontSize: size, color }}>{iconText}</Text>;
         },
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: 'gray',

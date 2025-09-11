@@ -1,25 +1,19 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 
 export default function PaymentsScreen() {
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      <View className="bg-blue-600 px-6 pt-16 pb-8">
-        <Text className="text-3xl font-bold text-white">
-          Payments
-        </Text>
-        <Text className="text-blue-100 text-lg mt-2">
-          View and make payments
-        </Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Payments</Text>
+        <Text style={styles.subtitle}>View and make payments</Text>
       </View>
       
-      <View className="px-6 py-6">
-        <View className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 items-center">
-          <Text className="text-6xl mb-4">💳</Text>
-          <Text className="text-lg font-semibold text-gray-900 mb-2">
-            No payments yet
-          </Text>
-          <Text className="text-gray-600 text-center">
+      <View style={styles.content}>
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyIcon}>💳</Text>
+          <Text style={styles.emptyTitle}>No payments yet</Text>
+          <Text style={styles.emptyDescription}>
             Payment history will appear here
           </Text>
         </View>
@@ -27,3 +21,57 @@ export default function PaymentsScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    backgroundColor: '#3B82F6',
+    padding: 24,
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#E5E7EB',
+    marginTop: 8,
+  },
+  content: {
+    padding: 24,
+  },
+  emptyCard: {
+    backgroundColor: 'white',
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  emptyDescription: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+});

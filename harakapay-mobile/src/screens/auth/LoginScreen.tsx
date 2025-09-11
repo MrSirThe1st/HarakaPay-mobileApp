@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen({ navigation }: any) {
@@ -22,62 +22,52 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-white" 
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View className="flex-1 justify-center px-6">
-        {/* Header */}
-        <View className="mb-12">
-          <Text className="text-4xl font-bold text-gray-900 text-center mb-2">
-            HarakaPay
-          </Text>
-          <Text className="text-lg text-gray-600 text-center">
-            Sign in to your account
-          </Text>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.title}>HarakaPay Mobile</Text>
+          <Text style={styles.subtitle}>Sign in to your account</Text>
         </View>
         
-        {/* Form */}
-        <View className="space-y-4">
-          <View>
-            <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
-              placeholder="Email"
-              placeholderTextColor="#9CA3AF"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-          </View>
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#9CA3AF"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+          />
           
-          <View>
-            <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
-              placeholder="Password"
-              placeholderTextColor="#9CA3AF"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-            />
-          </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#9CA3AF"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="password"
+          />
           
           <TouchableOpacity
-            className={`rounded-xl py-4 mt-6 ${loading ? 'bg-gray-400' : 'bg-blue-600'}`}
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text className="text-white text-center font-semibold text-lg">
+            <Text style={styles.buttonText}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            className="py-4"
+            style={styles.linkButton}
             onPress={() => navigation.navigate('Register')}
           >
-            <Text className="text-blue-600 text-center text-base">
+            <Text style={styles.linkText}>
               Don't have an account? Sign up
             </Text>
           </TouchableOpacity>
@@ -86,3 +76,65 @@ export default function LoginScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  header: {
+    marginBottom: 48,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#1F2937',
+  },
+  subtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#6B7280',
+  },
+  form: {
+    width: '100%',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    backgroundColor: '#F9FAFB',
+  },
+  button: {
+    backgroundColor: '#3B82F6',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  linkButton: {
+    padding: 12,
+  },
+  linkText: {
+    color: '#3B82F6',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+});

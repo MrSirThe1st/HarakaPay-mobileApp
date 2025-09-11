@@ -1,11 +1,25 @@
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function LoadingScreen() {
   return (
-    <View className="flex-1 justify-center items-center bg-white">
+    <View style={styles.container}>
       <ActivityIndicator size="large" color="#3B82F6" />
-      <Text className="mt-4 text-base text-gray-600">Loading...</Text>
+      <Text style={styles.text}>Loading...</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  text: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+});

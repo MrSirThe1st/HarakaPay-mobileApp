@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
 export default function RegisterScreen({ navigation }: any) {
@@ -51,49 +51,38 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-white" 
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="px-6 pt-16 pb-8">
-          {/* Header */}
-          <View className="mb-8">
-            <Text className="text-4xl font-bold text-gray-900 text-center mb-2">
-              Create Account
-            </Text>
-            <Text className="text-lg text-gray-600 text-center">
-              Sign up for HarakaPay
-            </Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Sign up for HarakaPay</Text>
           </View>
           
-          {/* Form */}
-          <View className="space-y-4">
-            {/* Name Row */}
-            <View className="flex-row space-x-3">
-              <View className="flex-1">
-                <TextInput
-                  className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
-                  placeholder="First Name"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.firstName}
-                  onChangeText={(value) => handleInputChange('firstName', value)}
-                  autoCapitalize="words"
-                />
-              </View>
-              <View className="flex-1">
-                <TextInput
-                  className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
-                  placeholder="Last Name"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.lastName}
-                  onChangeText={(value) => handleInputChange('lastName', value)}
-                  autoCapitalize="words"
-                />
-              </View>
+          <View style={styles.form}>
+            <View style={styles.nameRow}>
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="First Name"
+                placeholderTextColor="#9CA3AF"
+                value={formData.firstName}
+                onChangeText={(value) => handleInputChange('firstName', value)}
+                autoCapitalize="words"
+              />
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="Last Name"
+                placeholderTextColor="#9CA3AF"
+                value={formData.lastName}
+                onChangeText={(value) => handleInputChange('lastName', value)}
+                autoCapitalize="words"
+              />
             </View>
             
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
+              style={styles.input}
               placeholder="Email"
               placeholderTextColor="#9CA3AF"
               value={formData.email}
@@ -104,7 +93,7 @@ export default function RegisterScreen({ navigation }: any) {
             />
             
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
+              style={styles.input}
               placeholder="Phone Number"
               placeholderTextColor="#9CA3AF"
               value={formData.phone}
@@ -114,7 +103,7 @@ export default function RegisterScreen({ navigation }: any) {
             />
             
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base min-h-[80px]"
+              style={[styles.input, styles.textArea]}
               placeholder="Address (Optional)"
               placeholderTextColor="#9CA3AF"
               value={formData.address}
@@ -124,7 +113,7 @@ export default function RegisterScreen({ navigation }: any) {
             />
             
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
+              style={styles.input}
               placeholder="Password"
               placeholderTextColor="#9CA3AF"
               value={formData.password}
@@ -134,7 +123,7 @@ export default function RegisterScreen({ navigation }: any) {
             />
             
             <TextInput
-              className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-4 text-base"
+              style={styles.input}
               placeholder="Confirm Password"
               placeholderTextColor="#9CA3AF"
               value={formData.confirmPassword}
@@ -144,20 +133,20 @@ export default function RegisterScreen({ navigation }: any) {
             />
             
             <TouchableOpacity
-              className={`rounded-xl py-4 mt-6 ${loading ? 'bg-gray-400' : 'bg-blue-600'}`}
+              style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
             >
-              <Text className="text-white text-center font-semibold text-lg">
+              <Text style={styles.buttonText}>
                 {loading ? 'Creating Account...' : 'Create Account'}
               </Text>
             </TouchableOpacity>
             
             <TouchableOpacity
-              className="py-4"
+              style={styles.linkButton}
               onPress={() => navigation.navigate('Login')}
             >
-              <Text className="text-blue-600 text-center text-base">
+              <Text style={styles.linkText}>
                 Already have an account? Sign in
               </Text>
             </TouchableOpacity>
@@ -167,3 +156,78 @@ export default function RegisterScreen({ navigation }: any) {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 24,
+    paddingTop: 60,
+  },
+  header: {
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    color: '#1F2937',
+  },
+  subtitle: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: '#6B7280',
+  },
+  form: {
+    width: '100%',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    backgroundColor: '#F9FAFB',
+  },
+  halfInput: {
+    width: '48%',
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  button: {
+    backgroundColor: '#3B82F6',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  buttonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  linkButton: {
+    padding: 12,
+  },
+  linkText: {
+    color: '#3B82F6',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+});
