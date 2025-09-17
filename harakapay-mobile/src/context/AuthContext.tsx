@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { AuthState, User, UserProfile, MobileParentProfile } from '../types/user';
 
@@ -6,6 +6,7 @@ interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: any) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,38 +73,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // For mobile app, we expect parents to be in the parents table
-      const { data: parentProfile, error: parentError } = await supabase
-        .from('parents')
+      console.log('Fetching profile for user:', userId);
+      
+      // Fetch profile data (this should work for parents)
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
+        .eq('user_id', userId)
+        .eq('role', 'parent')
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return;
+      }
+
+      if (!profile) {
+        console.error('No profile data received');
+        return;
+      }
+
+      console.log('Profile data fetched successfully:', profile);
+
+      // Get additional parent data (email, address) from parents table
+      const { data: parent, error: parentError } = await supabase
+        .from('parents')
+        .select('email, address')
         .eq('user_id', userId)
         .single();
 
       if (parentError) {
-        console.error('Error fetching parent profile:', parentError);
-        return;
+        console.log('Parent data not available:', parentError.message);
+        // Continue with just profile data
       }
 
-      // Convert parent profile to mobile parent profile format
+      // Create mobile parent profile
       const mobileParentProfile: MobileParentProfile = {
-        id: (parentProfile as any).id,
-        user_id: (parentProfile as any).user_id,
-        first_name: (parentProfile as any).first_name,
-        last_name: (parentProfile as any).last_name,
-        role: 'parent',
-        school_id: (parentProfile as any).school_id || '', 
-        phone: (parentProfile as any).phone,
-        email: (parentProfile as any).email,
-        address: (parentProfile as any).address,
-        avatar_url: null,
-        is_active: (parentProfile as any).is_active,
-        created_at: (parentProfile as any).created_at,
-        updated_at: (parentProfile as any).updated_at,
+        id: (profile as any).id,
+        user_id: (profile as any).user_id,
+        first_name: (profile as any).first_name,
+        last_name: (profile as any).last_name,
+        role: (profile as any).role,
+        school_id: (profile as any).school_id || '',
+        phone: (profile as any).phone,
+        email: (parent as any)?.email || '', // Get email from parents table if available
+        address: (parent as any)?.address || '', // Get address from parents table if available
+        avatar_url: (profile as any).avatar_url,
+        is_active: (profile as any).is_active,
+        created_at: (profile as any).created_at,
+        updated_at: (profile as any).updated_at,
       };
 
+      console.log('Created mobile parent profile:', mobileParentProfile);
       dispatch({ type: 'SET_PROFILE', payload: mobileParentProfile });
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  // Function to refresh profile (useful when school is selected)
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchUserProfile(user.id);
     }
   };
 
@@ -130,9 +161,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (error) throw error;
 
-      // Create parent profile
+      // Create parent profile and parent record
       if (data.user) {
+        console.log('Creating profile and parent records for user:', data.user.id);
+        
+        // First create the profile record
         const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: data.user.id,
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            phone: userData.phone,
+            role: 'parent',
+            admin_type: null,
+            school_id: null,
+            avatar_url: null,
+            permissions: {},
+            is_active: true
+          } as any);
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw profileError;
+        }
+        console.log('Profile created successfully');
+
+        // Then create the parent record
+        const { error: parentError } = await supabase
           .from('parents')
           .insert({
             user_id: data.user.id,
@@ -141,10 +197,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: userData.phone,
             email: email,
             address: userData.address || null,
-            school_id: null, // Will be set when parent selects school
+            is_active: true
           } as any);
 
-        if (profileError) throw profileError;
+        if (parentError) {
+          console.error('Parent creation error:', parentError);
+          throw parentError;
+        }
+        console.log('Parent record created successfully');
       }
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
@@ -163,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ ...state, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
