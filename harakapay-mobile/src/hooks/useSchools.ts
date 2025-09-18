@@ -14,6 +14,7 @@ export interface UseSchoolsReturn {
 }
 
 export const useSchools = (userId?: string): UseSchoolsReturn => {
+  const { refreshProfile } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,6 +63,9 @@ export const useSchools = (userId?: string): UseSchoolsReturn => {
       if (school) {
         setSelectedSchool(school);
       }
+      
+      // Refresh the user profile to update school_id
+      await refreshProfile();
       
       console.log('School selected successfully');
     } catch (err) {

@@ -1,36 +1,54 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  Modal,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
   Alert,
-  RefreshControl
 } from 'react-native';
 import { useSchools } from '../hooks/useSchools';
 import { useAuth } from '../context/AuthContext';
 import { School } from '../types/user';
 
-export default function SchoolsScreen() {
+interface SchoolSelectionModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSchoolSelected?: (school: School) => void;
+}
+
+export default function SchoolSelectionModal({
+  visible,
+  onClose,
+  onSchoolSelected,
+}: SchoolSelectionModalProps) {
   const { profile } = useAuth();
-  const { 
-    schools, 
-    selectedSchool, 
-    loading, 
-    error, 
-    refreshSchools, 
-    selectSchool 
+  const {
+    schools,
+    selectedSchool,
+    loading,
+    error,
+    refreshSchools,
+    selectSchool,
   } = useSchools(profile?.user_id);
 
   const handleSchoolSelect = async (school: School) => {
     try {
       await selectSchool(school.id);
       Alert.alert(
-        'School Selected', 
+        'School Selected',
         `You have selected ${school.name}. You can now view your children and make payments.`,
-        [{ text: 'OK' }]
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              onSchoolSelected?.(school);
+              onClose();
+            },
+          },
+        ]
       );
     } catch (err) {
       Alert.alert('Error', 'Failed to select school. Please try again.');
@@ -39,14 +57,11 @@ export default function SchoolsScreen() {
 
   const renderSchoolCard = (school: School) => {
     const isSelected = selectedSchool?.id === school.id;
-    
+
     return (
       <TouchableOpacity
         key={school.id}
-        style={[
-          styles.schoolCard,
-          isSelected && styles.selectedSchoolCard
-        ]}
+        style={[styles.schoolCard, isSelected && styles.selectedSchoolCard]}
         onPress={() => handleSchoolSelect(school)}
         disabled={loading}
       >
@@ -64,7 +79,7 @@ export default function SchoolsScreen() {
             </View>
           )}
         </View>
-        
+
         {(school.contact_email || school.contact_phone) && (
           <View style={styles.schoolContact}>
             {school.contact_phone && (
@@ -75,12 +90,16 @@ export default function SchoolsScreen() {
             )}
           </View>
         )}
-        
+
         <View style={styles.schoolStatus}>
-          <View style={[
-            styles.statusBadge,
-            school.status === 'approved' ? styles.approvedStatus : styles.pendingStatus
-          ]}>
+          <View
+            style={[
+              styles.statusBadge,
+              school.status === 'approved'
+                ? styles.approvedStatus
+                : styles.pendingStatus,
+            ]}
+          >
             <Text style={styles.statusText}>
               {school.status === 'approved' ? 'Approved' : 'Pending'}
             </Text>
@@ -90,57 +109,53 @@ export default function SchoolsScreen() {
     );
   };
 
-  if (loading && schools.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Loading schools...</Text>
-      </View>
-    );
-  }
-
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={loading} onRefresh={refreshSchools} />
-      }
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Schools</Text>
-        <Text style={styles.subtitle}>
-          {selectedSchool 
-            ? `Selected: ${selectedSchool.name}` 
-            : 'Select your child\'s school'
-          }
-        </Text>
-      </View>
-      
-      <View style={styles.content}>
-        {error && (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={refreshSchools}>
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={styles.closeText}>✕</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Select School</Text>
+          <Text style={styles.subtitle}>Choose your child's school</Text>
+        </View>
 
-        {schools.length === 0 && !loading ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🏫</Text>
-            <Text style={styles.emptyTitle}>No schools available</Text>
-            <Text style={styles.emptyDescription}>
-              Schools will appear here once they're added to the system
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.schoolsList}>
-            {schools.map(renderSchoolCard)}
-          </View>
-        )}
+        <View style={styles.content}>
+          {loading && schools.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#3B82F6" />
+              <Text style={styles.loadingText}>Loading schools...</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.schoolsList}>
+              {error && (
+                <View style={styles.errorCard}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity
+                    style={styles.retryButton}
+                    onPress={refreshSchools}
+                  >
+                    <Text style={styles.retryText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {schools.length === 0 && !loading ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyIcon}>🏫</Text>
+                  <Text style={styles.emptyTitle}>No schools available</Text>
+                  <Text style={styles.emptyDescription}>
+                    Schools will appear here once they're added to the system
+                  </Text>
+                </View>
+              ) : (
+                schools.map(renderSchoolCard)
+              )}
+            </ScrollView>
+          )}
+        </View>
       </View>
-    </ScrollView>
+    </Modal>
   );
 }
 
@@ -153,25 +168,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
     padding: 24,
     paddingTop: 60,
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#E5E7EB',
-    marginTop: 8,
   },
   content: {
+    flex: 1,
     padding: 24,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
   },
   loadingText: {
     marginTop: 16,
@@ -203,12 +235,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   schoolsList: {
-    gap: 16,
+    flex: 1,
   },
   schoolCard: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

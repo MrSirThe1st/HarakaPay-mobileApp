@@ -1,36 +1,60 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useStudentLinking } from '../hooks/useStudentLinking';
+import StudentLinkingModal from '../components/StudentLinkingModal';
+import { StudentMatch } from '../types/user';
 
 export default function HomeScreen() {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
+  const { linkedStudents, refreshLinkedStudents } = useStudentLinking();
+  const [showStudentModal, setShowStudentModal] = useState(false);
+
+  const handleStudentLinked = (student: StudentMatch) => {
+    console.log('Student linked:', student.first_name, student.last_name);
+    // Refresh the linked students list
+    refreshLinkedStudents();
+  };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Welcome to HarakaPay</Text>
         <Text style={styles.subtitle}>
-          Hello, {profile?.first_name || user?.email}!
+          Hello, {profile?.first_name || profile?.email}!
         </Text>
       </View>
       
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
-        <View style={styles.card}>
+        <TouchableOpacity 
+          style={styles.card} 
+          onPress={() => setShowStudentModal(true)}
+        >
           <View style={styles.cardContent}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🏫</Text>
+              <Text style={styles.icon}>👨‍👩‍👧‍👦</Text>
             </View>
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Select School</Text>
-              <Text style={styles.cardDescription}>
-                Choose your child's school to get started
+              <Text style={styles.cardTitle}>
+                {linkedStudents.length > 0 ? 'My Children' : 'Link Your Children'}
               </Text>
+              <Text style={styles.cardDescription}>
+                {linkedStudents.length > 0 
+                  ? `${linkedStudents.length} child(ren) linked` 
+                  : 'Connect your account to your children\'s records'
+                }
+              </Text>
+              {linkedStudents.length > 0 && (
+                <Text style={styles.schoolStatus}>
+                  ✓ {linkedStudents.map(s => s.first_name).join(', ')} linked
+                </Text>
+              )}
             </View>
             <Text style={styles.arrow}>›</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         
         <View style={styles.card}>
           <View style={styles.cardContent}>
@@ -69,6 +93,12 @@ export default function HomeScreen() {
           </View>
         </View>
       </View>
+
+      <StudentLinkingModal
+        visible={showStudentModal}
+        onClose={() => setShowStudentModal(false)}
+        onStudentLinked={handleStudentLinked}
+      />
     </ScrollView>
   );
 }
@@ -156,5 +186,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     paddingVertical: 32,
+  },
+  schoolStatus: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

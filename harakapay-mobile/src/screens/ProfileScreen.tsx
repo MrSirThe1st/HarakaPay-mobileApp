@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'rea
 import { useAuth } from '../context/AuthContext';
 
 export default function ProfileScreen() {
-  const { user, profile, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
 
   const handleSignOut = async () => {
     Alert.alert(
@@ -26,14 +26,14 @@ export default function ProfileScreen() {
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatar}>
-              {profile?.first_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+              {profile?.first_name?.charAt(0) || profile?.email?.charAt(0) || 'U'}
             </Text>
           </View>
           <Text style={styles.name}>
             {profile?.first_name} {profile?.last_name}
           </Text>
           <Text style={styles.email}>
-            {user?.email}
+            {profile?.email}
           </Text>
         </View>
         

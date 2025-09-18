@@ -133,8 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Function to refresh profile (useful when school is selected)
   const refreshProfile = async () => {
-    if (user?.id) {
-      await fetchUserProfile(user.id);
+    if (state.profile?.user_id) {
+      await fetchUserProfile(state.profile.user_id);
     }
   };
 

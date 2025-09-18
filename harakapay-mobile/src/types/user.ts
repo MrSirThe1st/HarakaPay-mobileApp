@@ -56,7 +56,7 @@ export interface MobileParentProfile {
 
 export interface AuthState {
   user: User | null;
-  profile: UserProfile | null;
+  profile: MobileParentProfile | null;
   loading: boolean;
   error: string | null;
 }
@@ -107,4 +107,46 @@ export interface Payment {
   receipt_url?: string;
   created_at: string;
   updated_at: string;
+}
+
+// Student linking types
+export interface StudentMatch {
+  id: string;
+  student_id: string;
+  first_name: string;
+  last_name: string;
+  grade_level: string | null;
+  school_id: string;
+  school_name: string;
+  parent_name: string | null;
+  parent_email: string | null;
+  parent_phone: string | null;
+  match_confidence: 'high' | 'medium' | 'low';
+  match_reasons: string[];
+}
+
+export interface StudentLinkingOptions {
+  automatic: {
+    enabled: boolean;
+    matches: StudentMatch[];
+    loading: boolean;
+    error: string | null;
+  };
+  manual: {
+    enabled: boolean;
+    childName: string;
+    selectedSchool: School | null;
+    matches: StudentMatch[];
+    loading: boolean;
+    error: string | null;
+  };
+}
+
+export interface ParentStudentRelationship {
+  id: string;
+  parent_id: string;
+  student_id: string;
+  relationship: string;
+  is_primary: boolean;
+  created_at: string;
 }
