@@ -13,108 +13,39 @@ export class StudentLinkingService {
     try {
       console.log('Searching for automatic matches with:', { parentName, parentEmail, parentPhone });
 
-      // First, let's debug by checking what students exist
-      console.log('🔍 Debug: Checking all students in database...');
-      const { data: allStudents, error: allError } = await supabase
-        .from('students')
-        .select(`
-          id,
-          student_id,
-          first_name,
-          last_name,
-          parent_name,
-          parent_email,
-          parent_phone
-        `)
-        .limit(10);
-
-      if (allError) {
-        console.error('Error fetching all students:', allError);
-      } else {
-        console.log('📊 All students in database:', allStudents);
-      }
-
-      // Search students where parent_name or parent_email matches
-      console.log('🔍 Searching with query:', `parent_name.ilike.%${parentName}%,parent_email.ilike.%${parentEmail}%`);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 Session data:', session ? 'Session exists' : 'No session');
+      console.log('🔍 Access token:', session?.access_token ? 'Token exists' : 'No token');
       
-      const { data: students, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          student_id,
-          first_name,
-          last_name,
-          grade_level,
-          school_id,
-          parent_name,
-          parent_email,
-          parent_phone,
-          schools!inner(name)
-        `)
-        .or(`parent_name.ilike.%${parentName}%,parent_email.ilike.%${parentEmail}%`);
-
-      if (error) {
-        console.error('Error fetching students for automatic matching:', error);
+      if (!session?.access_token) {
+        console.error('No active session found');
         return [];
       }
 
-      console.log('📊 Students found by query:', students);
+      const response = await fetch('http://192.168.1.120:3000/api/parent/search-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          searchType: 'automatic',
+          parentName,
+          parentEmail,
+          parentPhone,
+        }),
+      });
 
-      if (!students || students.length === 0) {
-        console.log('No students found for automatic matching');
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error searching for automatic matches:', errorData);
         return [];
       }
 
-      // Calculate match confidence and reasons
-      const matches: StudentMatch[] = students.map((student: any) => {
-        const matchReasons: string[] = [];
-        let confidence: 'high' | 'medium' | 'low' = 'low';
-
-        // Check name match
-        if (student.parent_name && this.normalizeName(student.parent_name) === this.normalizeName(parentName)) {
-          matchReasons.push('Parent name matches');
-          confidence = 'high';
-        } else if (student.parent_name && this.normalizeName(student.parent_name).includes(this.normalizeName(parentName))) {
-          matchReasons.push('Parent name partially matches');
-          confidence = 'medium';
-        }
-
-        // Check email match
-        if (student.parent_email && student.parent_email.toLowerCase() === parentEmail.toLowerCase()) {
-          matchReasons.push('Email matches exactly');
-          confidence = 'high';
-        } else if (student.parent_email && student.parent_email.toLowerCase().includes(parentEmail.toLowerCase())) {
-          matchReasons.push('Email partially matches');
-          if (confidence === 'low') confidence = 'medium';
-        }
-
-        // Check phone match
-        if (parentPhone && student.parent_phone && this.normalizePhone(student.parent_phone) === this.normalizePhone(parentPhone)) {
-          matchReasons.push('Phone number matches');
-          if (confidence === 'low') confidence = 'medium';
-        }
-
-        return {
-          id: student.id,
-          student_id: student.student_id,
-          first_name: student.first_name,
-          last_name: student.last_name,
-          grade_level: student.grade_level,
-          school_id: student.school_id,
-          school_name: student.schools.name,
-          parent_name: student.parent_name,
-          parent_email: student.parent_email,
-          parent_phone: student.parent_phone,
-          match_confidence: confidence,
-          match_reasons: matchReasons,
-        };
-      });
-
-      // Sort by confidence (high first)
-      return matches.sort((a, b) => {
-        const confidenceOrder = { high: 3, medium: 2, low: 1 };
-        return confidenceOrder[b.match_confidence] - confidenceOrder[a.match_confidence];
-      });
+      const data = await response.json();
+      console.log('📊 Automatic matches found:', data.matches);
+      return data.matches || [];
 
     } catch (error) {
       console.error('StudentLinkingService.findAutomaticMatches error:', error);
@@ -132,72 +63,35 @@ export class StudentLinkingService {
     try {
       console.log('Searching for manual matches with:', { childName, schoolId });
 
-      // Search students by name and school
-      const { data: students, error } = await supabase
-        .from('students')
-        .select(`
-          id,
-          student_id,
-          first_name,
-          last_name,
-          grade_level,
-          school_id,
-          parent_name,
-          parent_email,
-          parent_phone,
-          schools!inner(name)
-        `)
-        .eq('school_id', schoolId)
-        .ilike('first_name', `%${childName}%`);
-
-      if (error) {
-        console.error('Error fetching students for manual matching:', error);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
         return [];
       }
 
-      if (!students || students.length === 0) {
-        console.log('No students found for manual matching');
+      const response = await fetch('http://192.168.1.120:3000/api/parent/search-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          searchType: 'manual',
+          childName,
+          schoolId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error searching for manual matches:', errorData);
         return [];
       }
 
-      // Create matches with basic confidence
-      const matches: StudentMatch[] = students.map((student: any) => {
-        const matchReasons: string[] = [];
-        let confidence: 'high' | 'medium' | 'low' = 'low';
-
-        // Check name match
-        const normalizedChildName = this.normalizeName(childName);
-        const normalizedStudentName = this.normalizeName(`${student.first_name} ${student.last_name}`);
-        
-        if (normalizedStudentName.includes(normalizedChildName)) {
-          matchReasons.push('Student name matches');
-          confidence = 'high';
-        } else if (normalizedStudentName.includes(normalizedChildName.split(' ')[0])) {
-          matchReasons.push('First name matches');
-          confidence = 'medium';
-        }
-
-        return {
-          id: student.id,
-          student_id: student.student_id,
-          first_name: student.first_name,
-          last_name: student.last_name,
-          grade_level: student.grade_level,
-          school_id: student.school_id,
-          school_name: student.schools.name,
-          parent_name: student.parent_name,
-          parent_email: student.parent_email,
-          parent_phone: student.parent_phone,
-          match_confidence: confidence,
-          match_reasons: matchReasons,
-        };
-      });
-
-      // Sort by confidence (high first)
-      return matches.sort((a, b) => {
-        const confidenceOrder = { high: 3, medium: 2, low: 1 };
-        return confidenceOrder[b.match_confidence] - confidenceOrder[a.match_confidence];
-      });
+      const data = await response.json();
+      console.log('📊 Manual matches found:', data.matches);
+      return data.matches || [];
 
     } catch (error) {
       console.error('StudentLinkingService.findManualMatches error:', error);
@@ -217,10 +111,18 @@ export class StudentLinkingService {
     try {
       console.log('Creating parent-student relationship:', { parentId, studentId, relationship, isPrimary });
 
-      const response = await fetch('http://localhost:3000/api/parent/link-student', {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
+        return false;
+      }
+
+      const response = await fetch('http://192.168.1.120:3000/api/parent/link-student', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           parent_id: parentId,
@@ -305,17 +207,4 @@ export class StudentLinkingService {
     }
   }
 
-  /**
-   * Helper function to normalize names for comparison
-   */
-  private static normalizeName(name: string): string {
-    return name.toLowerCase().trim().replace(/\s+/g, ' ');
-  }
-
-  /**
-   * Helper function to normalize phone numbers for comparison
-   */
-  private static normalizePhone(phone: string): string {
-    return phone.replace(/\D/g, ''); // Remove all non-digits
-  }
 }
