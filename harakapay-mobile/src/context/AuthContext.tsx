@@ -1,6 +1,7 @@
  import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { AuthState, User, UserProfile, MobileParentProfile } from '../types/user';
+import { PersistenceService } from '../services/persistenceService';
 
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
@@ -126,6 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Created mobile parent profile:', mobileParentProfile);
       dispatch({ type: 'SET_PROFILE', payload: mobileParentProfile });
+      
+      // Save profile to persistence
+      await PersistenceService.saveUserProfile(mobileParentProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -141,11 +145,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+
+      // Save auth tokens to persistence
+      if (data.session) {
+        await PersistenceService.saveAuthTokens(
+          data.session.access_token,
+          data.session.refresh_token
+        );
+      }
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
@@ -216,6 +228,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear all persisted data
+      await PersistenceService.clearAllData();
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;

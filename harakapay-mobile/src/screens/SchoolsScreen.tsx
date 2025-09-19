@@ -4,9 +4,7 @@ import {
   Text, 
   ScrollView, 
   StyleSheet, 
-  TouchableOpacity, 
   ActivityIndicator,
-  Alert,
   RefreshControl
 } from 'react-native';
 import { useSchools } from '../hooks/useSchools';
@@ -17,39 +15,14 @@ export default function SchoolsScreen() {
   const { profile } = useAuth();
   const { 
     schools, 
-    selectedSchool, 
     loading, 
     error, 
-    refreshSchools, 
-    selectSchool 
+    refreshSchools
   } = useSchools(profile?.user_id);
 
-  const handleSchoolSelect = async (school: School) => {
-    try {
-      await selectSchool(school.id);
-      Alert.alert(
-        'School Selected', 
-        `You have selected ${school.name}. You can now view your children and make payments.`,
-        [{ text: 'OK' }]
-      );
-    } catch (err) {
-      Alert.alert('Error', 'Failed to select school. Please try again.');
-    }
-  };
-
   const renderSchoolCard = (school: School) => {
-    const isSelected = selectedSchool?.id === school.id;
-    
     return (
-      <TouchableOpacity
-        key={school.id}
-        style={[
-          styles.schoolCard,
-          isSelected && styles.selectedSchoolCard
-        ]}
-        onPress={() => handleSchoolSelect(school)}
-        disabled={loading}
-      >
+      <View key={school.id} style={styles.schoolCard}>
         <View style={styles.schoolHeader}>
           <Text style={styles.schoolIcon}>🏫</Text>
           <View style={styles.schoolInfo}>
@@ -58,11 +31,6 @@ export default function SchoolsScreen() {
               <Text style={styles.schoolAddress}>{school.address}</Text>
             )}
           </View>
-          {isSelected && (
-            <View style={styles.selectedBadge}>
-              <Text style={styles.selectedText}>✓</Text>
-            </View>
-          )}
         </View>
         
         {(school.contact_email || school.contact_phone) && (
@@ -86,7 +54,7 @@ export default function SchoolsScreen() {
             </Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -109,10 +77,7 @@ export default function SchoolsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Schools</Text>
         <Text style={styles.subtitle}>
-          {selectedSchool 
-            ? `Selected: ${selectedSchool.name}` 
-            : 'Select your child\'s school'
-          }
+          Available schools in the system
         </Text>
       </View>
       
@@ -217,12 +182,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedSchoolCard: {
-    borderColor: '#3B82F6',
-    backgroundColor: '#EFF6FF',
+    marginBottom: 16,
   },
   schoolHeader: {
     flexDirection: 'row',
@@ -245,19 +205,6 @@ const styles = StyleSheet.create({
   schoolAddress: {
     fontSize: 14,
     color: '#6B7280',
-  },
-  selectedBadge: {
-    backgroundColor: '#3B82F6',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
   },
   schoolContact: {
     marginBottom: 12,

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StudentLinkingService } from '../services/studentLinkingService';
 import { StudentMatch, School, StudentLinkingOptions } from '../types/user';
+import { supabase } from '../lib/supabase';
+import { PersistenceService } from '../services/persistenceService';
 
 interface UseStudentLinkingReturn {
   options: StudentLinkingOptions;
@@ -35,10 +37,48 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
   });
   const [linkedStudents, setLinkedStudents] = useState<StudentMatch[]>([]);
 
-  // Get parent ID from profile
-  const parentId = profile?.id;
+  // Get parent ID from API
+  const [parentId, setParentId] = useState<string | null>(null);
 
-  // Load linked students on mount
+  // Fetch parent ID from API
+  const fetchParentId = async () => {
+    if (!profile) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
+        return;
+      }
+
+      const response = await fetch('http://192.168.1.120:3000/api/parent/get-parent-id', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching parent ID:', errorData);
+        return;
+      }
+
+      const data = await response.json();
+      setParentId(data.parentId);
+    } catch (error) {
+      console.error('Error fetching parent ID:', error);
+    }
+  };
+
+  // Load parent ID and linked students on mount
+  useEffect(() => {
+    if (profile) {
+      fetchParentId();
+    }
+  }, [profile]);
+
+  // Load linked students when parent ID is available
   useEffect(() => {
     if (parentId) {
       refreshLinkedStudents();
@@ -212,10 +252,34 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
     if (!parentId) return;
 
     try {
-      const students = await StudentLinkingService.getLinkedStudents(parentId);
-      setLinkedStudents(students);
+      // Check if data is stale (older than 30 minutes)
+      const isStale = await PersistenceService.isDataStale(30);
+      
+      if (isStale) {
+        // Fetch fresh data from server
+        const students = await StudentLinkingService.getLinkedStudents(parentId);
+        setLinkedStudents(students);
+        
+        // Save to persistence
+        await PersistenceService.saveLinkedStudents(students);
+        await PersistenceService.saveLastSync(new Date().toISOString());
+      } else {
+        // Load from persistence
+        const cachedStudents = await PersistenceService.getLinkedStudents();
+        setLinkedStudents(cachedStudents);
+        console.log('📱 Loaded linked students from cache');
+      }
     } catch (error) {
       console.error('Error refreshing linked students:', error);
+      
+      // Fallback to cached data if available
+      try {
+        const cachedStudents = await PersistenceService.getLinkedStudents();
+        setLinkedStudents(cachedStudents);
+        console.log('📱 Fallback to cached students');
+      } catch (cacheError) {
+        console.error('Error loading cached students:', cacheError);
+      }
     }
   };
 

@@ -231,7 +231,14 @@ export default function StudentLinkingModal({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity 
+            onPress={() => {
+              console.log('Close button pressed');
+              onClose();
+            }} 
+            style={styles.closeButton}
+            activeOpacity={0.7}
+          >
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Link Your Children</Text>
@@ -280,12 +287,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 60,
     right: 24,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1000,
   },
   closeText: {
     color: 'white',
