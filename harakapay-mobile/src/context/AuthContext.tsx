@@ -47,15 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        dispatch({ type: 'SET_USER', payload: session.user });
-        fetchUserProfile(session.user.id);
-      } else {
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    });
+    // Check for persisted session first
+    checkPersistedAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -71,6 +64,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkPersistedAuth = async () => {
+    try {
+      // First check Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        console.log('✅ Found Supabase session');
+        dispatch({ type: 'SET_USER', payload: session.user });
+        await fetchUserProfile(session.user.id);
+        return;
+      }
+
+      // If no Supabase session, check persisted tokens
+      const { accessToken, refreshToken } = await PersistenceService.getAuthTokens();
+      
+      if (accessToken && refreshToken) {
+        console.log('📱 Found persisted tokens, attempting to restore session...');
+        
+        // Try to set the session with persisted tokens
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+
+        if (error) {
+          console.error('❌ Error restoring session:', error);
+          // Try to refresh tokens before giving up
+          const refreshed = await refreshAuthTokens();
+          if (refreshed) {
+            // Try to get the session again after refresh
+            const { data: refreshedData } = await supabase.auth.getSession();
+            if (refreshedData.session?.user) {
+              console.log('✅ Successfully restored session after token refresh');
+              dispatch({ type: 'SET_USER', payload: refreshedData.session.user });
+              await fetchUserProfile(refreshedData.session.user.id);
+            } else {
+              await PersistenceService.clearAuthTokens();
+              dispatch({ type: 'SET_LOADING', payload: false });
+            }
+          } else {
+            // Clear invalid tokens
+            await PersistenceService.clearAuthTokens();
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
+        } else if (data.session?.user) {
+          console.log('✅ Successfully restored session from persisted tokens');
+          dispatch({ type: 'SET_USER', payload: data.session.user });
+          await fetchUserProfile(data.session.user.id);
+        } else {
+          dispatch({ type: 'SET_LOADING', payload: false });
+        }
+      } else {
+        console.log('📱 No persisted tokens found');
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    } catch (error) {
+      console.error('❌ Error checking persisted auth:', error);
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -139,6 +193,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     if (state.profile?.user_id) {
       await fetchUserProfile(state.profile.user_id);
+    }
+  };
+
+  const refreshAuthTokens = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('❌ Error refreshing session:', error);
+        await PersistenceService.clearAuthTokens();
+        dispatch({ type: 'SIGN_OUT' });
+        return false;
+      }
+
+      if (data.session) {
+        await PersistenceService.saveAuthTokens(
+          data.session.access_token,
+          data.session.refresh_token
+        );
+        console.log('✅ Tokens refreshed successfully');
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Error refreshing tokens:', error);
+      return false;
     }
   };
 
@@ -217,6 +296,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw parentError;
         }
         console.log('Parent record created successfully');
+      }
+
+      // Save auth tokens to persistence if session exists
+      if (data.session) {
+        await PersistenceService.saveAuthTokens(
+          data.session.access_token,
+          data.session.refresh_token
+        );
       }
     } catch (error: any) {
       dispatch({ type: 'SET_ERROR', payload: error.message });

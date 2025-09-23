@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, SafeAreaView, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Users } from 'lucide-react-native';
 import { useStudentLinking } from '../hooks/useStudentLinking';
 import { StudentMatch } from '../types/user';
 
 export default function StudentsScreen() {
   const { linkedStudents, refreshLinkedStudents, loading } = useStudentLinking();
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -28,9 +31,6 @@ export default function StudentsScreen() {
           <Text style={styles.studentId}>ID: {student.student_id}</Text>
           <Text style={styles.schoolName}>{student.school_name}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>Active</Text>
-        </View>
       </View>
       
       <View style={styles.studentDetails}>
@@ -47,49 +47,54 @@ export default function StudentsScreen() {
   );
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#3B82F6" />
+      
+      <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <Text style={styles.title}>My Children</Text>
         <Text style={styles.subtitle}>
           {linkedStudents.length} child(ren) linked
         </Text>
       </View>
       
-      <View style={styles.content}>
-        {loading ? (
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Loading children...</Text>
-          </View>
-        ) : linkedStudents.length > 0 ? (
-          linkedStudents.map(renderStudentCard)
-        ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>👨‍👩‍👧‍👦</Text>
-            <Text style={styles.emptyTitle}>No children linked yet</Text>
-            <Text style={styles.emptyDescription}>
-              Your linked children will appear here
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          {loading ? (
+            <View style={styles.loadingCard}>
+              <Text style={styles.loadingText}>Loading children...</Text>
+            </View>
+          ) : linkedStudents.length > 0 ? (
+            linkedStudents.map(renderStudentCard)
+          ) : (
+            <View style={styles.emptyCard}>
+              <Users size={48} color="#6B7280" />
+              <Text style={styles.emptyTitle}>No children linked yet</Text>
+              <Text style={styles.emptyDescription}>
+                Your linked children will appear here
+              </Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#3B82F6',
   },
   header: {
     backgroundColor: '#3B82F6',
     padding: 24,
-    paddingTop: 60,
+    paddingBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -98,11 +103,15 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#E5E7EB',
+    color: '#E0E7FF',
     marginTop: 8,
   },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
   content: {
-    padding: 24,
+    padding: 20,
   },
   loadingCard: {
     backgroundColor: 'white',

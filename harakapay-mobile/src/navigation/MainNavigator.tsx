@@ -1,45 +1,57 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Home, School, Users, CreditCard, User } from 'lucide-react-native';
 import HomeScreen from '../screens/HomeScreen';
 import SchoolsScreen from '../screens/SchoolsScreen';
 import StudentsScreen from '../screens/StudentsScreen';
 import PaymentsScreen from '../screens/PaymentsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import PaymentSelectionScreen from '../screens/PaymentSelectionScreen';
+import StudentPaymentScreen from '../screens/StudentPaymentScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-export default function MainNavigator() {
+function TabNavigator() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconText: string;
-
           switch (route.name) {
             case 'Home':
-              iconText = '🏠';
-              break;
+              return <Home size={size} color={color} />;
             case 'Schools':
-              iconText = '🏫';
-              break;
+              return <School size={size} color={color} />;
             case 'Students':
-              iconText = '👨‍👩‍👧‍👦';
-              break;
+              return <Users size={size} color={color} />;
             case 'Payments':
-              iconText = '💳';
-              break;
+              return <CreditCard size={size} color={color} />;
             case 'Profile':
-              iconText = '👤';
-              break;
+              return <User size={size} color={color} />;
             default:
-              iconText = '❓';
+              return <Home size={size} color={color} />;
           }
-
-          return <Text style={{ fontSize: size, color }}>{iconText}</Text>;
         },
         tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: 'gray',
+        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarStyle: {
+          backgroundColor: '#F9FAFB',
+          borderTopWidth: 0,
+          paddingBottom: Math.max(insets.bottom, 5),
+          paddingTop: 5,
+          height: 60 + Math.max(insets.bottom, 5),
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+          marginTop: 2,
+        },
         headerShown: false,
       })}
     >
@@ -49,5 +61,15 @@ export default function MainNavigator() {
       <Tab.Screen name="Payments" component={PaymentsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Tabs" component={TabNavigator} />
+      <Stack.Screen name="PaymentSelection" component={PaymentSelectionScreen} />
+      <Stack.Screen name="StudentPayment" component={StudentPaymentScreen} />
+    </Stack.Navigator>
   );
 }

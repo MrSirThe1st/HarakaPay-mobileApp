@@ -22,6 +22,7 @@ export class PersistenceService {
         [STORAGE_KEYS.REFRESH_TOKEN, refreshToken],
       ]);
       console.log('✅ Auth tokens saved to storage');
+      console.log('🔍 Token preview:', accessToken.substring(0, 20) + '...');
     } catch (error) {
       console.error('❌ Error saving auth tokens:', error);
     }
@@ -33,10 +34,16 @@ export class PersistenceService {
         STORAGE_KEYS.AUTH_TOKEN,
         STORAGE_KEYS.REFRESH_TOKEN,
       ]);
-      return {
+      const result = {
         accessToken: accessToken[1],
         refreshToken: refreshToken[1],
       };
+      console.log('📱 Retrieved tokens from storage:', {
+        hasAccessToken: !!result.accessToken,
+        hasRefreshToken: !!result.refreshToken,
+        accessTokenPreview: result.accessToken ? result.accessToken.substring(0, 20) + '...' : 'null'
+      });
+      return result;
     } catch (error) {
       console.error('❌ Error getting auth tokens:', error);
       return { accessToken: null, refreshToken: null };

@@ -8,6 +8,7 @@ import { PersistenceService } from '../services/persistenceService';
 interface UseStudentLinkingReturn {
   options: StudentLinkingOptions;
   linkedStudents: StudentMatch[];
+  loading: boolean;
   searchAutomaticMatches: () => Promise<void>;
   searchManualMatches: (childName: string, schoolId: string) => Promise<void>;
   createRelationship: (studentId: string) => Promise<boolean>;
@@ -19,6 +20,7 @@ interface UseStudentLinkingReturn {
 
 export const useStudentLinking = (): UseStudentLinkingReturn => {
   const { profile } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<StudentLinkingOptions>({
     automatic: {
       enabled: false,
@@ -251,6 +253,7 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
   const refreshLinkedStudents = async () => {
     if (!parentId) return;
 
+    setLoading(true);
     try {
       // Check if data is stale (older than 30 minutes)
       const isStale = await PersistenceService.isDataStale(30);
@@ -280,12 +283,15 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
       } catch (cacheError) {
         console.error('Error loading cached students:', cacheError);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
     options,
     linkedStudents,
+    loading,
     searchAutomaticMatches,
     searchManualMatches,
     createRelationship,

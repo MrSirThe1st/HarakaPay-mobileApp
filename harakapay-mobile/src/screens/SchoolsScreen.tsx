@@ -5,11 +5,13 @@ import {
   ScrollView, 
   StyleSheet, 
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  TouchableOpacity
 } from 'react-native';
+import { School } from 'lucide-react-native';
 import { useSchools } from '../hooks/useSchools';
 import { useAuth } from '../context/AuthContext';
-import { School } from '../types/user';
+import { School as SchoolType } from '../types/user';
 
 export default function SchoolsScreen() {
   const { profile } = useAuth();
@@ -20,11 +22,11 @@ export default function SchoolsScreen() {
     refreshSchools
   } = useSchools(profile?.user_id);
 
-  const renderSchoolCard = (school: School) => {
+  const renderSchoolCard = (school: SchoolType) => {
     return (
       <View key={school.id} style={styles.schoolCard}>
         <View style={styles.schoolHeader}>
-          <Text style={styles.schoolIcon}>🏫</Text>
+          <School size={32} color="#3B82F6" />
           <View style={styles.schoolInfo}>
             <Text style={styles.schoolName}>{school.name}</Text>
             {school.address && (
@@ -93,7 +95,7 @@ export default function SchoolsScreen() {
 
         {schools.length === 0 && !loading ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🏫</Text>
+            <School size={48} color="#6B7280" />
             <Text style={styles.emptyTitle}>No schools available</Text>
             <Text style={styles.emptyDescription}>
               Schools will appear here once they're added to the system

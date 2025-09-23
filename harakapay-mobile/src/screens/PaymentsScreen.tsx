@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { CreditCard } from 'lucide-react-native';
 
 export default function PaymentsScreen() {
   return (
@@ -11,7 +12,7 @@ export default function PaymentsScreen() {
       
       <View style={styles.content}>
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>💳</Text>
+          <CreditCard size={48} color="#6B7280" />
           <Text style={styles.emptyTitle}>No payments yet</Text>
           <Text style={styles.emptyDescription}>
             Payment history will appear here

@@ -9,14 +9,15 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { School } from 'lucide-react-native';
 import { useSchools } from '../hooks/useSchools';
 import { useAuth } from '../context/AuthContext';
-import { School } from '../types/user';
+import { School as SchoolType } from '../types/user';
 
 interface SchoolSelectionModalProps {
   visible: boolean;
   onClose: () => void;
-  onSchoolSelected?: (school: School) => void;
+  onSchoolSelected?: (school: SchoolType) => void;
 }
 
 export default function SchoolSelectionModal({
@@ -55,7 +56,7 @@ export default function SchoolSelectionModal({
     }
   };
 
-  const renderSchoolCard = (school: School) => {
+  const renderSchoolCard = (school: SchoolType) => {
     const isSelected = selectedSchool?.id === school.id;
 
     return (
@@ -66,7 +67,7 @@ export default function SchoolSelectionModal({
         disabled={loading}
       >
         <View style={styles.schoolHeader}>
-          <Text style={styles.schoolIcon}>🏫</Text>
+          <School size={32} color="#3B82F6" />
           <View style={styles.schoolInfo}>
             <Text style={styles.schoolName}>{school.name}</Text>
             {school.address && (
@@ -142,7 +143,7 @@ export default function SchoolSelectionModal({
 
               {schools.length === 0 && !loading ? (
                 <View style={styles.emptyCard}>
-                  <Text style={styles.emptyIcon}>🏫</Text>
+                  <School size={48} color="#6B7280" />
                   <Text style={styles.emptyTitle}>No schools available</Text>
                   <Text style={styles.emptyDescription}>
                     Schools will appear here once they're added to the system
