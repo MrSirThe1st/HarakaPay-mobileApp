@@ -130,18 +130,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Fetching profile for user:', userId);
       
-      // Fetch profile data (this should work for parents)
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('role', 'parent')
-        .single();
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
         return;
       }
+
+      // Use API endpoint instead of direct database access
+      const response = await fetch(`http://192.168.1.120:3000/api/parent/profile?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching profile:', errorData);
+        return;
+      }
+
+      const data = await response.json();
+      const profile = data.profile;
+      const parent = data.parent;
 
       if (!profile) {
         console.error('No profile data received');
@@ -150,33 +162,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Profile data fetched successfully:', profile);
 
-      // Get additional parent data (email, address) from parents table
-      const { data: parent, error: parentError } = await supabase
-        .from('parents')
-        .select('email, address')
-        .eq('user_id', userId)
-        .single();
-
-      if (parentError) {
-        console.log('Parent data not available:', parentError.message);
-        // Continue with just profile data
-      }
-
       // Create mobile parent profile
       const mobileParentProfile: MobileParentProfile = {
-        id: (profile as any).id,
-        user_id: (profile as any).user_id,
-        first_name: (profile as any).first_name,
-        last_name: (profile as any).last_name,
-        role: (profile as any).role,
-        school_id: (profile as any).school_id || '',
-        phone: (profile as any).phone,
-        email: (parent as any)?.email || '', // Get email from parents table if available
-        address: (parent as any)?.address || '', // Get address from parents table if available
-        avatar_url: (profile as any).avatar_url,
-        is_active: (profile as any).is_active,
-        created_at: (profile as any).created_at,
-        updated_at: (profile as any).updated_at,
+        id: profile.id,
+        user_id: profile.user_id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        role: profile.role,
+        school_id: profile.school_id || '',
+        phone: profile.phone,
+        email: parent?.email || '', // Get email from parents table if available
+        address: parent?.address || '', // Get address from parents table if available
+        avatar_url: profile.avatar_url,
+        is_active: profile.is_active,
+        created_at: profile.created_at,
+        updated_at: profile.updated_at,
       };
 
       console.log('Created mobile parent profile:', mobileParentProfile);

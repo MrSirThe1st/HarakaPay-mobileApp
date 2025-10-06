@@ -155,50 +155,31 @@ export class StudentLinkingService {
     try {
       console.log('Fetching linked students for parent:', parentId);
 
-      const { data: relationships, error } = await supabase
-        .from('parent_students')
-        .select(`
-          student_id,
-          students!inner(
-            id,
-            student_id,
-            first_name,
-            last_name,
-            grade_level,
-            school_id,
-            parent_name,
-            parent_email,
-            parent_phone,
-            schools!inner(name)
-          )
-        `)
-        .eq('parent_id', parentId);
-
-      if (error) {
-        console.error('Error fetching linked students:', error);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
         return [];
       }
 
-      if (!relationships || relationships.length === 0) {
-        console.log('No linked students found');
+      // Use API endpoint instead of direct database access
+      const response = await fetch('http://192.168.1.120:3000/api/parent/linked-students', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching linked students:', errorData);
         return [];
       }
 
-      const students: StudentMatch[] = relationships.map((rel: any) => ({
-        id: rel.students.id,
-        student_id: rel.students.student_id,
-        first_name: rel.students.first_name,
-        last_name: rel.students.last_name,
-        grade_level: rel.students.grade_level,
-        school_id: rel.students.school_id,
-        school_name: rel.students.schools.name,
-        parent_name: rel.students.parent_name,
-        parent_email: rel.students.parent_email,
-        parent_phone: rel.students.parent_phone,
-        match_confidence: 'high' as const,
-        match_reasons: ['Already linked'],
-      }));
+      const data = await response.json();
+      const students = data.students || [];
 
+      console.log(`Successfully fetched ${students.length} linked students`);
       return students;
 
     } catch (error) {

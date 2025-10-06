@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, SafeAreaView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CreditCard, Users, School, History, MessageCircle, Eye, Plus } from 'lucide-react-native';
+import { CreditCard, Users, School, History, MessageCircle, Eye, Plus, RefreshCw } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useStudentLinking } from '../hooks/useStudentLinking';
 import StudentLinkingModal from '../components/StudentLinkingModal';
@@ -9,14 +9,24 @@ import { StudentMatch } from '../types/user';
 
 export default function HomeScreen({ navigation }: any) {
   const { profile } = useAuth();
-  const { linkedStudents, refreshLinkedStudents } = useStudentLinking();
+  const { linkedStudents, refreshLinkedStudents, loading } = useStudentLinking();
   const [showStudentModal, setShowStudentModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
 
   const handleStudentLinked = (student: StudentMatch) => {
     console.log('Student linked:', student.first_name, student.last_name);
-    // Refresh the linked students list
-    refreshLinkedStudents();
+    // Refresh the linked students list with force refresh
+    refreshLinkedStudents(true);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshLinkedStudents(true);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -43,7 +53,13 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Top Action Buttons */}
         <View style={styles.topActions}>
           <TouchableOpacity 
@@ -106,9 +122,18 @@ export default function HomeScreen({ navigation }: any) {
 
         {/* Children Cards Section */}
         <View style={styles.childrenSection}>
-          <Text style={styles.sectionTitle}>
-            My Children ({linkedStudents.length})
-          </Text>
+          <View style={styles.childrenHeader}>
+            <Text style={styles.sectionTitle}>
+              My Children ({linkedStudents.length})
+            </Text>
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={() => refreshLinkedStudents(true)}
+              disabled={loading}
+            >
+              <RefreshCw size={16} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
           
           {linkedStudents.length > 0 ? (
             <View style={styles.childrenCards}>
@@ -311,6 +336,17 @@ const styles = StyleSheet.create({
   childrenSection: {
     paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  childrenHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
   },
   childrenCards: {
     gap: 15,

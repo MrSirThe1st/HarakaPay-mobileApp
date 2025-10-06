@@ -104,32 +104,57 @@ export class SchoolService {
    */
   static async getSelectedSchool(userId: string): Promise<School | null> {
     try {
-      // First get the parent's profile to find their school_id
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('school_id')
-        .eq('user_id', userId)
-        .eq('role', 'parent')
-        .single();
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No active session found');
+        return null;
+      }
 
-      if (profileError || !(profile as any)?.school_id) {
+      // Use API endpoint to get parent profile (which includes school_id)
+      const response = await fetch(`http://192.168.1.120:3000/api/parent/profile?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Error fetching parent profile');
+        return null;
+      }
+
+      const data = await response.json();
+      const profile = data.profile;
+
+      if (!profile?.school_id) {
         console.log('No school selected for parent');
         return null;
       }
 
-      // Then fetch the school details
-      const { data: school, error: schoolError } = await supabase
-        .from('schools')
-        .select('*')
-        .eq('id', (profile as any).school_id)
-        .single();
+      // Fetch school details using the schools API endpoint
+      const schoolResponse = await fetch('http://192.168.1.120:3000/api/schools', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
-      if (schoolError) {
-        console.error('Error fetching selected school:', schoolError);
+      if (!schoolResponse.ok) {
+        console.error('Error fetching schools');
+        return null;
+      }
+
+      const schoolsData = await schoolResponse.json();
+      const school = schoolsData.schools?.find((s: any) => s.id === profile.school_id);
+      
+      if (!school) {
+        console.error('School not found');
         return null;
       }
 
       return school;
+
     } catch (error) {
       console.error('SchoolService.getSelectedSchool error:', error);
       return null;

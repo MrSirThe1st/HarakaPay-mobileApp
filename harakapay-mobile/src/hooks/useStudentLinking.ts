@@ -195,8 +195,8 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
       const success = await StudentLinkingService.createRelationship(parentId, studentId);
       
       if (success) {
-        // Refresh linked students
-        await refreshLinkedStudents();
+        // Refresh linked students with force refresh
+        await refreshLinkedStudents(true);
         
         // Clear matches
         clearMatches();
@@ -250,15 +250,16 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
     }));
   };
 
-  const refreshLinkedStudents = async () => {
+  const refreshLinkedStudents = async (forceRefresh = false) => {
     if (!parentId) return;
 
     setLoading(true);
     try {
-      // Check if data is stale (older than 30 minutes)
+      // Check if data is stale (older than 30 minutes) or if force refresh is requested
       const isStale = await PersistenceService.isDataStale(30);
       
-      if (isStale) {
+      if (isStale || forceRefresh) {
+        console.log('🔄 Fetching fresh linked students from server...');
         // Fetch fresh data from server
         const students = await StudentLinkingService.getLinkedStudents(parentId);
         setLinkedStudents(students);
@@ -266,6 +267,7 @@ export const useStudentLinking = (): UseStudentLinkingReturn => {
         // Save to persistence
         await PersistenceService.saveLinkedStudents(students);
         await PersistenceService.saveLastSync(new Date().toISOString());
+        console.log(`✅ Successfully fetched ${students.length} linked students`);
       } else {
         // Load from persistence
         const cachedStudents = await PersistenceService.getLinkedStudents();
