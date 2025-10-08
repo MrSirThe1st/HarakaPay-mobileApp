@@ -2,14 +2,14 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, School, Users, CreditCard, User } from 'lucide-react-native';
+import { Home, Bell, User } from 'lucide-react-native';
 import HomeScreen from '../screens/HomeScreen';
-import SchoolsScreen from '../screens/SchoolsScreen';
-import StudentsScreen from '../screens/StudentsScreen';
-import PaymentsScreen from '../screens/PaymentsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PaymentSelectionScreen from '../screens/PaymentSelectionScreen';
 import StudentPaymentScreen from '../screens/StudentPaymentScreen';
+import CategoryPaymentScreen from '../screens/CategoryPaymentScreen';
+import PaymentDetailsScreen from '../screens/PaymentDetailsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -24,12 +24,8 @@ function TabNavigator() {
           switch (route.name) {
             case 'Home':
               return <Home size={size} color={color} />;
-            case 'Schools':
-              return <School size={size} color={color} />;
-            case 'Students':
-              return <Users size={size} color={color} />;
-            case 'Payments':
-              return <CreditCard size={size} color={color} />;
+            case 'Notifications':
+              return <Bell size={size} color={color} />;
             case 'Profile':
               return <User size={size} color={color} />;
             default:
@@ -56,9 +52,7 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Schools" component={SchoolsScreen} />
-      <Tab.Screen name="Students" component={StudentsScreen} />
-      <Tab.Screen name="Payments" component={PaymentsScreen} />
+      <Tab.Screen name="Notifications" component={NotificationsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -70,6 +64,8 @@ export default function MainNavigator() {
       <Stack.Screen name="Tabs" component={TabNavigator} />
       <Stack.Screen name="PaymentSelection" component={PaymentSelectionScreen} />
       <Stack.Screen name="StudentPayment" component={StudentPaymentScreen} />
+      <Stack.Screen name="CategoryPayment" component={CategoryPaymentScreen} />
+      <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} />
     </Stack.Navigator>
   );
 }

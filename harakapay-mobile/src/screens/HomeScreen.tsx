@@ -190,20 +190,7 @@ export default function HomeScreen({ navigation }: any) {
           )}
         </View>
 
-        {/* Promotional Section */}
-        <View style={styles.promotionalSection}>
-          <View style={styles.promotionalCard}>
-            <View style={styles.promotionalContent}>
-              <Text style={styles.promotionalTitle}>School Fee Hub</Text>
-              <Text style={styles.promotionalDescription}>
-                Manage all your children's school fees in one place
-              </Text>
-            </View>
-            <View style={styles.promotionalIcon}>
-              <School size={40} color="#FFFFFF" />
-            </View>
-          </View>
-        </View>
+
       </ScrollView>
 
       <StudentLinkingModal

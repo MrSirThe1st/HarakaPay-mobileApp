@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   USER_PROFILE: 'user_profile',
   LINKED_STUDENTS: 'linked_students',
+  STUDENT_FEES: 'student_fees',
   SCHOOLS: 'schools',
   PARENT_ID: 'parent_id',
   LAST_SYNC: 'last_sync',
@@ -211,6 +212,35 @@ export class PersistenceService {
     } catch (error) {
       console.error('❌ Error checking data staleness:', error);
       return true;
+    }
+  }
+
+  // Student Fees persistence
+  static async saveStudentFees(studentFees: any): Promise<void> {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.STUDENT_FEES, JSON.stringify(studentFees));
+      console.log('✅ Student fees saved to storage');
+    } catch (error) {
+      console.error('❌ Error saving student fees:', error);
+    }
+  }
+
+  static async getStudentFees(): Promise<any> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.STUDENT_FEES);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('❌ Error getting student fees:', error);
+      return null;
+    }
+  }
+
+  static async clearStudentFees(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.STUDENT_FEES);
+      console.log('✅ Student fees cleared from storage');
+    } catch (error) {
+      console.error('❌ Error clearing student fees:', error);
     }
   }
 

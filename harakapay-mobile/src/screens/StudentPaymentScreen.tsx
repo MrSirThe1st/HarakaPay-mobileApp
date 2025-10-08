@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, CreditCard, Download, Share, Calendar, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, CreditCard, Download, Share, Calendar, CheckCircle, GraduationCap, BookOpen, DollarSign } from 'lucide-react-native';
 import { StudentMatch } from '../types/user';
+import { StudentFeesService, StudentFeeData, StudentFeeCategory } from '../services/studentFeesService';
 
 interface StudentPaymentScreenProps {
   navigation: any;
@@ -37,61 +39,74 @@ export default function StudentPaymentScreen(props: any) {
   const { student } = route.params;
   const insets = useSafeAreaInsets();
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
+  const [studentFeeData, setStudentFeeData] = useState<StudentFeeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Mock payment history data
-  const paymentHistory: PaymentRecord[] = [
-    {
-      id: '1',
-      month: 'December',
-      year: 2024,
-      amount: 1200,
-      status: 'paid',
-      paymentDate: '2024-12-01',
-      receiptUrl: 'receipt_2024_12.pdf'
-    },
-    {
-      id: '2',
-      month: 'November',
-      year: 2024,
-      amount: 1200,
-      status: 'paid',
-      paymentDate: '2024-11-01',
-      receiptUrl: 'receipt_2024_11.pdf'
-    },
-    {
-      id: '3',
-      month: 'October',
-      year: 2024,
-      amount: 1200,
-      status: 'paid',
-      paymentDate: '2024-10-01',
-      receiptUrl: 'receipt_2024_10.pdf'
-    },
-    {
-      id: '4',
-      month: 'September',
-      year: 2024,
-      amount: 1200,
-      status: 'overdue',
-    },
-  ];
+  // Fetch student fee data
+  useEffect(() => {
+    fetchStudentFees();
+  }, []);
 
-  const currentMonthAmount = 1200; // Mock amount
-  const totalOutstanding = paymentHistory
-    .filter(p => p.status === 'overdue')
-    .reduce((sum, p) => sum + p.amount, 0);
+  const fetchStudentFees = async () => {
+    try {
+      setLoading(true);
+      const allFees = await StudentFeesService.getStudentFees();
+      const studentFees = allFees.students.find(s => s.student.id === student.id);
+      setStudentFeeData(studentFees || null);
+    } catch (error) {
+      console.error('Error fetching student fees:', error);
+      Alert.alert('Error', 'Failed to load fee information');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handlePayNow = () => {
-    Alert.alert(
-      'Payment Confirmation',
-      `Pay R ${currentMonthAmount.toLocaleString()} for ${student.first_name}'s ${selectedMonth} fees?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Pay Now', onPress: () => {
-          Alert.alert('Success', 'Payment processed successfully!');
-        }}
-      ]
-    );
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchStudentFees();
+    setRefreshing(false);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const getCategoryIcon = (categoryType: string) => {
+    switch (categoryType) {
+      case 'tuition':
+        return <GraduationCap size={20} color="#3B82F6" />;
+      case 'additional':
+        return <BookOpen size={20} color="#10B981" />;
+      default:
+        return <CreditCard size={20} color="#6B7280" />;
+    }
+  };
+
+  const getCategoryColor = (categoryType: string) => {
+    switch (categoryType) {
+      case 'tuition':
+        return '#3B82F6';
+      case 'additional':
+        return '#10B981';
+      default:
+        return '#6B7280';
+    }
+  };
+
+
+  const handleCategoryPress = (category: any) => {
+    if (!studentFeeData) return;
+    
+    // Navigate to payment page with category and student data
+    navigation.navigate('CategoryPayment', {
+      category: category,
+      student: studentFeeData.student,
+      academicYear: studentFeeData.academic_year,
+    });
   };
 
   const handleDownloadReceipt = (receipt: PaymentRecord) => {
@@ -132,122 +147,98 @@ export default function StudentPaymentScreen(props: any) {
         >
           <ArrowLeft size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payment</Text>
+        <Text style={styles.headerTitle}>
+          {studentFeeData ? `${student.first_name} ${student.last_name}` : 'Payment'}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Student Info */}
-        <View style={styles.studentInfoCard}>
-          <View style={styles.studentAvatar}>
-            <Text style={styles.studentAvatarText}>
-              {student.first_name[0]}{student.last_name[0]}
-            </Text>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading fee information...</Text>
           </View>
-          <View style={styles.studentDetails}>
-            <Text style={styles.studentName}>
-              {student.first_name} {student.last_name}
-            </Text>
-            <Text style={styles.studentSchool}>{student.school_name}</Text>
-            <Text style={styles.studentGrade}>Grade {student.grade_level}</Text>
+        ) : !studentFeeData ? (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>No fee information available</Text>
+            <Text style={styles.noDataSubtext}>This student doesn't have any fee assignments yet.</Text>
           </View>
-        </View>
-
-        {/* Current Month Payment */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Current Month Payment</Text>
-          
-          <View style={styles.paymentCard}>
-            <View style={styles.paymentHeader}>
-              <View style={styles.monthSelector}>
-                <Calendar size={20} color="#3B82F6" />
-                <Text style={styles.monthText}>{selectedMonth} 2024</Text>
-              </View>
-              <Text style={styles.amountText}>R {currentMonthAmount.toLocaleString()}</Text>
-            </View>
-            
-            <View style={styles.paymentDetails}>
-              <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Tuition Fee</Text>
-                <Text style={styles.paymentValue}>R 1,000.00</Text>
-              </View>
-              <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Transport</Text>
-                <Text style={styles.paymentValue}>R 200.00</Text>
-              </View>
-              <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Total</Text>
-                <Text style={styles.paymentTotal}>R {currentMonthAmount.toLocaleString()}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.payButton} onPress={handlePayNow}>
-              <CreditCard size={20} color="#FFFFFF" />
-              <Text style={styles.payButtonText}>Pay Now</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Outstanding Balance */}
-        {totalOutstanding > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Outstanding Balance</Text>
-            <View style={styles.outstandingCard}>
-              <Text style={styles.outstandingAmount}>R {totalOutstanding.toLocaleString()}</Text>
-              <Text style={styles.outstandingText}>Total outstanding amount</Text>
-              <TouchableOpacity style={styles.payOutstandingButton}>
-                <Text style={styles.payOutstandingText}>Pay Outstanding</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Payment History */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment History</Text>
-          
-          {paymentHistory.map((payment) => (
-            <View key={payment.id} style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <View style={styles.historyInfo}>
-                  <Text style={styles.historyMonth}>{payment.month} {payment.year}</Text>
-                  <Text style={styles.historyAmount}>R {payment.amount.toLocaleString()}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(payment.status) + '20' }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(payment.status) }]}>
-                    {getStatusText(payment.status)}
-                  </Text>
-                </View>
-              </View>
+        ) : (
+          <>
+            {/* Fee Categories */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Fee Categories</Text>
               
-              {payment.paymentDate && (
-                <Text style={styles.paymentDate}>
-                  Paid on {new Date(payment.paymentDate).toLocaleDateString()}
-                </Text>
-              )}
-              
-              {payment.status === 'paid' && payment.receiptUrl && (
-                <View style={styles.receiptActions}>
-                  <TouchableOpacity 
-                    style={styles.receiptButton}
-                    onPress={() => handleDownloadReceipt(payment)}
-                  >
-                    <Download size={16} color="#3B82F6" />
-                    <Text style={styles.receiptButtonText}>Download</Text>
-                  </TouchableOpacity>
+              {studentFeeData.fee_categories.map((category) => (
+                <TouchableOpacity 
+                  key={category.id} 
+                  style={styles.categoryCard}
+                  onPress={() => handleCategoryPress(category)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.categoryHeader}>
+                    <View style={styles.categoryTitleRow}>
+                      {getCategoryIcon(category.category_type)}
+                      <Text style={styles.categoryName}>{category.name}</Text>
+                      {category.is_mandatory && (
+                        <View style={styles.mandatoryBadge}>
+                          <Text style={styles.mandatoryText}>Required</Text>
+                        </View>
+                      )}
+                      {!category.is_mandatory && (
+                        <View style={styles.optionalBadge}>
+                          <Text style={styles.optionalText}>Optional</Text>
+                        </View>
+                      )}
+                    </View>
+                    
+                    {/* Category Type */}
+                    <View style={styles.categoryTypeRow}>
+                      <Text style={styles.categoryTypeLabel}>Type: </Text>
+                      <Text style={styles.categoryTypeText}>
+                        {category.category_type || 'General'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.categoryAmount, { color: getCategoryColor(category.category_type) }]}>
+                      {formatCurrency(category.amount)}
+                    </Text>
+                  </View>
                   
-                  <TouchableOpacity 
-                    style={styles.receiptButton}
-                    onPress={() => handleShareReceipt(payment)}
-                  >
-                    <Share size={16} color="#3B82F6" />
-                    <Text style={styles.receiptButtonText}>Share</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+                  {category.description && (
+                    <Text style={styles.categoryDescription}>{category.description}</Text>
+                  )}
+                  
+                  <View style={styles.categoryFooter}>
+                    <View style={styles.paymentTypes}>
+                      <Text style={styles.paymentTypesLabel}>Payment Options:</Text>
+                      <View style={styles.paymentTypeBadges}>
+                        {category.supports_recurring && (
+                          <View style={styles.paymentTypeBadge}>
+                            <Text style={styles.paymentTypeText}>Recurring</Text>
+                          </View>
+                        )}
+                        {category.supports_one_time && (
+                          <View style={styles.paymentTypeBadge}>
+                            <Text style={styles.paymentTypeText}>One-time</Text>
+                          </View>
+                        )}
+                        {!category.supports_recurring && !category.supports_one_time && (
+                          <Text style={styles.noPaymentTypes}>No payment options available</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -286,50 +277,170 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  studentInfoCard: {
-    flexDirection: 'row',
+  loadingContainer: {
+    padding: 40,
     alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  noDataContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  noDataSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  summaryCard: {
     backgroundColor: '#FFFFFF',
-    margin: 20,
-    padding: 20,
     borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
-  studentAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#3B82F6',
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  studentAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  studentDetails: {
-    flex: 1,
-  },
-  studentName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  studentSchool: {
+  summaryLabel: {
     fontSize: 16,
     color: '#6B7280',
-    marginBottom: 2,
   },
-  studentGrade: {
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  categoryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  categoryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  categoryName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1F2937',
+    marginLeft: 8,
+    flex: 1,
+  },
+  mandatoryBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  mandatoryText: {
+    fontSize: 10,
+    color: '#DC2626',
+    fontWeight: '500',
+  },
+  optionalBadge: {
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  optionalText: {
+    fontSize: 10,
+    color: '#2563EB',
+    fontWeight: '500',
+  },
+  categoryTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  categoryTypeLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  categoryTypeText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  categoryAmount: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  categoryDescription: {
     fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  categoryFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  paymentTypes: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  paymentTypesLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  paymentTypeBadges: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  paymentTypeBadge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  paymentTypeText: {
+    fontSize: 10,
+    color: '#3B82F6',
+    fontWeight: '500',
+  },
+  noPaymentTypes: {
+    fontSize: 10,
     color: '#9CA3AF',
+    fontStyle: 'italic',
   },
   section: {
     paddingHorizontal: 20,
@@ -396,20 +507,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1F2937',
-  },
-  payButton: {
-    backgroundColor: '#3B82F6',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  payButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   outstandingCard: {
     backgroundColor: '#FEF2F2',
